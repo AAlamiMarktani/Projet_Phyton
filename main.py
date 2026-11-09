@@ -10,7 +10,6 @@ logger = get_logger("main")
 
 
 def geolocaliser(conn, ips: list[str]) -> list[str]:
-    """Cherche le pays de chaque IP, l'enregistre dans postgres, retourne les IP sans pays."""
     inconnues = []
     for i, ip in enumerate(ips, 1):
         country = geolocation.country(ip)
@@ -72,8 +71,6 @@ if __name__ == "__main__":
                 print(
                     f"  {user or '(vide)':<18} {'valide' if valid else 'invalide':<9} {country:<6} {n:>6}"
                 )
-
-            # serving : dashboard matplotlib
             charts.show(conn)
             conn.close()
         else:

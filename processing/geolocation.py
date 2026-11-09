@@ -9,12 +9,13 @@ from config import get_logger
 logger = get_logger("processing")
 
 if not os.getenv("IPINFO_TOKEN"):
-    logger.warning("IPINFO_TOKEN absent (fichier .env) : les pays ne seront pas trouves")
+    logger.warning(
+        "IPINFO_TOKEN absent (fichier .env) : les pays ne seront pas trouves"
+    )
 
 
 @lru_cache(maxsize=None)
 def geolocation(ip: str) -> dict | None:
-    # token ipinfo (plan Lite) lu dans la variable IPINFO_TOKEN : il ne doit pas etre ecrit dans le code
     headers = {"Authorization": f"Bearer {os.getenv('IPINFO_TOKEN')}"}
     try:
         response = requests.get(
@@ -30,7 +31,6 @@ def geolocation(ip: str) -> dict | None:
 
 
 def country(ip: str) -> str:
-    """Code pays de l'IP"""
     try:
         adresse = ipaddress.ip_address(ip)
     except ValueError:

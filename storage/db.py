@@ -1,8 +1,3 @@
-"""
-in  : liste de records (dict) venant de processing.extract_transform
-out : table postgres ssh_events
-"""
-
 import os
 
 import psycopg2
@@ -38,7 +33,6 @@ CREATE TABLE IF NOT EXISTS ip_countries (
 
 
 def connect():
-    """Connexion postgres : DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD (fichier .env)."""
     try:
         return psycopg2.connect(
             host=os.getenv("DB_HOST", "localhost"),
@@ -53,7 +47,6 @@ def connect():
 
 
 def save(conn, records: list[dict]) -> None:
-    """Remplace le contenu de la table (les logs sont relus en entier a chaque lancement)."""
     rows = [
         (
             r["date"],
@@ -93,7 +86,6 @@ def save(conn, records: list[dict]) -> None:
 
 
 def unknown_ips(conn) -> list[str]:
-    """Les IP qui n'ont pas encore de pays."""
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -107,14 +99,12 @@ def unknown_ips(conn) -> list[str]:
 
 
 def set_country(conn, ip: str, country: str, info: dict | None = None) -> None:
-    """Met le pays de toutes les lignes d'une IP (un commit par IP : la base se remplit au fur et a mesure).
-    info = reponse complete d'ipinfo, gardee dans ip_countries."""
     try:
         with conn.cursor() as cur:
             cur.execute(
                 "UPDATE ssh_events SET country = %s WHERE ip = %s", (country, ip)
             )
-            if country != "??":  # on garde le pays pour les prochains lancements
+            if country != "??":
                 cur.execute(
                     "INSERT INTO ip_countries (ip, country, info) VALUES (%s, %s, %s) "
                     "ON CONFLICT (ip) DO UPDATE SET country = EXCLUDED.country, info = EXCLUDED.info",

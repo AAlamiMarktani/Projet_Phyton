@@ -1,8 +1,3 @@
-"""
-in  : un dossier (ex: ./data/auth) contenant des logs bruts (.log, .1, .2, .gz, .zip, .tar, .tar.gz ...)
-out : liste de lignes (str)
-"""
-
 import gzip
 import hashlib
 import os
@@ -18,7 +13,6 @@ GZIP_MAGIC = b"\x1f\x8b"
 
 
 def _is_gzip(file_path: str) -> bool:
-    # On teste le contenu et pas l'extension : "auth.log" peut etre un .tar.gz
     with open(file_path, "rb") as f:
         return f.read(2) == GZIP_MAGIC
 
@@ -30,14 +24,12 @@ def _open_text(file_path: str):
 
 
 def _decode(data: bytes) -> list[str]:
-    # un fichier dans une archive peut lui-meme etre un .gz
     if data[:2] == GZIP_MAGIC:
         data = gzip.decompress(data)
     return data.decode("utf-8", errors="replace").splitlines()
 
 
 def _archive_files(file_path: str):
-    """Genere (nom, lignes) pour chaque fichier d'une archive (.tar, .tar.gz ou .zip)."""
     if tarfile.is_tarfile(file_path):
         with tarfile.open(file_path) as t:
             for member in t.getmembers():
@@ -51,13 +43,11 @@ def _archive_files(file_path: str):
 
 
 def _files(path: str):
-    """Genere (nom, lignes) pour chaque fichier du dossier, et pour chaque fichier des archives."""
     for name in sorted(os.listdir(path)):
         file_path = os.path.join(path, name)
         if not os.path.isfile(file_path):
             continue
         try:
-            # archive (tar, tar.gz, zip) : on lit les fichiers qu'elle contient
             if tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path):
                 yield from _archive_files(file_path)
             else:
@@ -74,10 +64,8 @@ def _files(path: str):
 
 
 def iter_lines(path: str):
-    """Genere toutes les lignes de tous les fichiers du dossier (un meme contenu n'est lu qu'une fois)."""
     vus = set()
     for name, lines in _files(path):
-        # une archive peut contenir les memes logs que ceux du dossier : on ne les compte pas 2 fois
         empreinte = hashlib.sha256(
             "\n".join(lines).encode("utf-8", errors="replace")
         ).hexdigest()
@@ -90,7 +78,6 @@ def iter_lines(path: str):
 
 
 def ingest(path: str) -> list[str]:
-    """Retourne la liste de toutes les lignes (sans le \\n final)."""
     try:
         return list(iter_lines(path))
     except FileNotFoundError:

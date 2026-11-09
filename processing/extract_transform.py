@@ -6,7 +6,7 @@ from config import get_logger
 
 logger = get_logger("processing")
 
-# Les logs syslog n'ont pas d'annee -> on la fournit (les fichiers datent de mai 2026)
+
 DEFAULT_YEAR = 2026
 
 HEADER = re.compile(
@@ -14,31 +14,19 @@ HEADER = re.compile(
     r"(?P<host>\S+)\s+(?P<process>[\w\-/]+)(?:\[(?P<pid>\d+)\])?:\s+(?P<message>.*)$"
 )
 
-# "Invalid user admin from 1.2.3.4 port 123"  (le user peut etre vide)
 INVALID_USER = re.compile(r"Invalid user (?P<user>.*?) from (?P<ip>\S+) port \d+")
 
-# "Failed password for root from ..." / "Failed password for invalid user test from ..."
-# + "message repeated 3 times: [ Failed password for ... ]"
 FAILED_PASSWORD = re.compile(
     r"(?:message repeated (?P<n>\d+) times: \[ )?"
     r"Failed password for (?P<invalid>invalid user )?(?P<user>.*?) from (?P<ip>\S+) port \d+"
 )
 
-# "Accepted password for bob from ..." / "Accepted publickey for ..."
 ACCEPTED = re.compile(
     r"Accepted (?P<method>password|publickey) for (?P<user>\S+) from (?P<ip>\S+) port \d+"
 )
 
 
 def extract(row: str, year: int = DEFAULT_YEAR) -> dict | None:
-    """
-    Transforme une ligne de log en dict, ou None si la ligne ne concerne pas l'auth ssh.
-
-    Champs :
-      date, time, ip, user, count
-      event       : 'invalid_user' | 'wrong_password' | 'success'
-      valid_user  : True / False
-    """
     head = HEADER.match(row)
     if not head or head["process"] != "sshd":
         return None
@@ -80,19 +68,10 @@ def extract_all(rows: list[str], year: int = DEFAULT_YEAR) -> list[dict]:
 
 
 def summarize(records: list[dict]) -> dict:
-    """
-    Compte : utilisateurs valides / invalides / mots de passe errones / succes,
-    et combien de fois chaque IP a tente de s'authentifier.
-
-    Une meme tentative sur un utilisateur inconnu produit 2 lignes dans le log
-    ("Invalid user" puis "Failed password for invalid user") : pour ne pas la
-    compter deux fois, invalid_user ne compte que les lignes "Invalid user",
-    et by_ip ne compte que les vraies tentatives (mot de passe errone ou succes).
-    """
     s = {
-        "valid_user": 0,  # tentatives (echec ou succes) sur un utilisateur qui existe
-        "invalid_user": 0,  # utilisateurs inexistants essayes
-        "wrong_password": 0,  # mots de passe errones (utilisateurs valides + invalides)
+        "valid_user": 0,
+        "invalid_user": 0,
+        "wrong_password": 0,
         "wrong_password_valid_user": 0,
         "success": 0,
         "by_ip": Counter(),

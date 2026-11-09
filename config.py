@@ -1,8 +1,3 @@
-"""
-in  : rien
-out : charger_env() lit le fichier .env ; get_logger(nom) donne un logger qui ecrit dans logs/<nom>.log
-"""
-
 import logging
 import os
 
@@ -10,7 +5,6 @@ RACINE = os.path.dirname(os.path.abspath(__file__))
 
 
 def charger_env() -> None:
-    """Lit le fichier .env (lignes CLE=valeur) et remplit os.environ (sans ecraser une variable deja definie)."""
     chemin = os.path.join(RACINE, ".env")
     if not os.path.isfile(chemin):
         return
@@ -24,9 +18,8 @@ def charger_env() -> None:
 
 
 def get_logger(nom: str) -> logging.Logger:
-    """Un logger par module : logs/<nom>.log (tout) + console (avertissements et erreurs)."""
     logger = logging.getLogger(nom)
-    if logger.handlers:  # deja configure
+    if logger.handlers:
         return logger
     logger.setLevel(logging.INFO)
     os.makedirs(os.path.join(RACINE, "logs"), exist_ok=True)
