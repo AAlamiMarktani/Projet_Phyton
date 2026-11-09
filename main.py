@@ -38,26 +38,23 @@ if __name__ == "__main__":
             )
             print(f"Connexions reussies    : {s['success']}\n")
 
-            # storage : postgres (d'abord les lignes, la base n'est donc plus vide)
             conn = db.connect()
             db.save(conn, records)
-            ips = db.unknown_ips(conn)  # les IP deja geolocalisees ne sont pas refaites
+            ips = db.unknown_ips(conn)
             print(f"Postgres : lignes enregistrees, {len(ips)} IP a geolocaliser...")
 
-            # storage : pays de chaque IP, puis 3 tours max sur celles qui ont echoue
             inconnues = geolocaliser(conn, ips)
             for tour in range(1, 4):
                 if not inconnues:
                     break
                 print(f"  tour {tour} : {len(inconnues)} IP sans pays")
-                geolocation.geolocation.cache_clear()  # le cache garde les echecs
+                geolocation.geolocation.cache_clear()
                 time.sleep(5)
                 inconnues = geolocaliser(conn, inconnues)
             if inconnues:
                 logger.warning(f"{len(inconnues)} IP toujours sans pays")
             print(f"  IP toujours sans pays : {len(inconnues)}\n")
 
-            # serving : requetes sur la base
             print("\nPar evenement (postgres) :")
             for event, n in queries.by_event(conn):
                 print(f"  {event:<18} {n:>6}")
